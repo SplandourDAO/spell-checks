@@ -1,10 +1,11 @@
-#author: zhongyiio
+#contributors: zhongyiio, hosuke
 
 import json
 import requests
+from typing import List
 
 
-def _precheck(tokens: list[dict]):
+def _precheck(tokens: List[dict]):
     coins = _list_coinpaprika_coins()
     for token in tokens:
         if token[0] not in coins:

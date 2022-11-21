@@ -2,34 +2,7 @@
 
 import json
 import requests
-from typing import List
-
-
-def _precheck(tokens: List[dict]):
-    coins = _list_coinpaprika_coins()
-    for token in tokens:
-        if token[0] not in coins:
-            return False, token
-        coin = coins[token[0]]
-        # AVAX, WAVAX, USDC.e, BTC.B...
-        if coin["symbol"].upper() not in token[2].upper():
-            return False, token
-    return True, None
-
-
-def _check_item(token: dict):
-    coin = _get_coinpaprika_coin(token[0])
-    if not coin:
-        return False
-    if "contract" in coin \
-            and coin["contract"] \
-            and token[3] \
-            and coin["contract"].lower() == token[3].lower():
-        return True
-
-    # default True
-    return True
-
+from typing import List, Any
 
 # [
 #     ...,
@@ -55,6 +28,36 @@ def _list_coinpaprika_coins():
     else:
         return {}
 
+def _precheck(tokens: List[dict]) -> (bool, List[Any]):
+    coins = _list_coinpaprika_coins()
+    pass_check = True
+    failed_tokens = []
+    for token in tokens:
+        if token[0] not in coins:
+            pass_check = False
+            failed_tokens.append(token)
+        else:
+            coin = coins[token[0]]
+            # AVAX, WAVAX, USDC.e, BTC.B...
+            if coin["symbol"].upper() not in token[2].upper():
+                pass_check = False
+                failed_tokens.append(token)
+    return pass_check, failed_tokens
+
+
+def _check_item(token: dict) -> bool:
+    coin = _get_coinpaprika_coin(token[0])
+    if not coin:
+        return False
+    if "contract" in coin \
+            and coin["contract"] \
+            and token[3] \
+            and coin["contract"].lower() == token[3].lower():
+        return True
+
+    # default True
+    return True
+
 
 # {
 #     "id": "wbtc-wrapped-bitcoin",
@@ -77,14 +80,19 @@ def _get_coinpaprika_coin(coin_id: str):
 
 def check_valid(tokens):
     # pre check
-    pass_precheck, token = _precheck(tokens)
+    pass_precheck, failed_tokens = _precheck(tokens)
+    passed_tokens = []
     # check item
     if not pass_precheck:
-        raise Exception("Not pass precheck, token: {}".format(json.dumps(token)))
-    for token in valid_tokens:
-        valid = _check_item(token)
-        if not valid:
-            raise Exception("Token not valid, token: {}".format(json.dumps(token)))
+        for token in failed_tokens:
+            print("Not pass precheck, token: {}".format(json.dumps(token)))
+    for token in tokens:
+        if token not in failed_tokens:
+            valid = _check_item(token)
+            if not valid:
+                print("Token not valid, token: {}".format(json.dumps(token)))
+            else:
+                passed_tokens.append(token)
 
 
 if __name__ == '__main__':
